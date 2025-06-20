@@ -6,3 +6,4 @@ training
 .venv
 yolov5s.pt
 yolov8x.pt
+.gitignore
