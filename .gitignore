@@ -1,0 +1,8 @@
+runs/detect
+yolov5s.pt
+test_camera.py
+input_videos
+training
+.venv
+yolov5s.pt
+yolov8x.pt
