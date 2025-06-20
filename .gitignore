@@ -1,6 +1,6 @@
 runs/detect
 yolov5s.pt
-test_camera.py
+# test_camera.py
 input_videos
 training
 .venv
