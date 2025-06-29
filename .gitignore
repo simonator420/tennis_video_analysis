@@ -7,3 +7,6 @@ training
 yolov5s.pt
 yolov8x.pt
 .gitignore
+models
+output_videos
+tracker_stubs

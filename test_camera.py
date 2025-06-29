@@ -44,7 +44,6 @@ while True:
     # Show frame
     cv2.imshow("YOLOv5 - Webcam", annotated_frame)
 
-
     # Exit on pressing 'q'
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
