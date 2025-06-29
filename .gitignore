@@ -1,4 +1,4 @@
-runs/detect
+runs
 yolov5s.pt
 # test_camera.py
 input_videos
@@ -10,3 +10,6 @@ yolov8x.pt
 models
 output_videos
 tracker_stubs
+court_line_detector/__pycache__
+trackers/__pycache__
+utils/__pycache__
