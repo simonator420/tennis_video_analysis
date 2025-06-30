@@ -11,8 +11,8 @@ class PlayerTracker:
     
     def choose_and_filter_players(self, court_keypoints, player_detections):
         id_counts = {}
-
-        # Analyzing first frame (adjust to more frames for better monitoring)
+        
+        # Analyzing first frame (adjust to more frames for more accurate monitoring)
         for player_dict in player_detections[:1]:
             for track_id, bbox in player_dict.items():
                 player_center = get_center_of_bbox(bbox)
@@ -27,11 +27,11 @@ class PlayerTracker:
                 if min_distance < 200:
                     id_counts[track_id] = id_counts.get(track_id, 0) + 1
 
-        # vyber dvě nejčastější ID
+        # Selecting two most frequent ids
         chosen_players = sorted(id_counts.items(), key=lambda x: x[1], reverse=True)[:2]
         chosen_players = [x[0] for x in chosen_players]
 
-        # teď filtruj celou sekvenci
+        # Filtering the rest of the frames
         filtered_player_detections = []
         for player_dict in player_detections:
             filtered_player_dict = {track_id: bbox for track_id, bbox in player_dict.items() if track_id in chosen_players}
