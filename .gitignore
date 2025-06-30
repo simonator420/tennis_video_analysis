@@ -14,3 +14,6 @@ tracker_stubs
 court_line_detector/__pycache__
 trackers/__pycache__
 utils/__pycache__
+trackers/__pycache__/ball_tracker.cpython-313.pyc
+trackers/__pycache__/player_tracker.cpython-313.pyc
+utils/__pycache__/video_utils.cpython-313.pyc

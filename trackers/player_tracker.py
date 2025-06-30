@@ -5,6 +5,8 @@ import pickle
 class PlayerTracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path)
+    
+    # def choose
         
     def detect_frames(self, frames, read_from_stub=False, stub_path=None):
         player_detections = []
