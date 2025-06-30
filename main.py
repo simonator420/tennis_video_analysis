@@ -15,10 +15,10 @@ def main():
     player_tracker = PlayerTracker(model_path='yolov8x')
     ball_tracker = BallTracker(model_path='models/yolo5_last.pt')
     player_detections = player_tracker.detect_frames(video_frames,
-                                                     read_from_stub=True,
+                                                     read_from_stub=False,
                                                      stub_path="tracker_stubs/player_detections.pkl")
     ball_detections = ball_tracker.detect_frames(video_frames,
-                                                 read_from_stub=False,
+                                                 read_from_stub=True,
                                                  stub_path="tracker_stubs/ball_detections.pkl")
     
     ball_detections = ball_tracker.interpolate_ball_positions(ball_detections)
@@ -27,6 +27,9 @@ def main():
     court_model_path = "models/keypoints_model_state.pth"
     court_line_detector = CourtLineDetector(court_model_path)
     court_keypoints = court_line_detector.predict(video_frames[0])
+    
+    # Choose players
+    player_detections = player_tracker.choose_and_filter_players(court_keypoints, player_detections)
         
     # Draw Player Bounding Boxes
     output_video_frames = player_tracker.draw_bboxes(video_frames, player_detections)
