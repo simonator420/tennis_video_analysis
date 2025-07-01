@@ -32,6 +32,9 @@ def main():
     # Choose players
     player_detections = player_tracker.choose_and_filter_players(court_keypoints, player_detections)
     
+    # Detect ball shots
+    ball_shot_frames = ball_tracker.get_ball_shot_frames(ball_detections, court_keypoints)
+        
     # Mini Court
     mini_court = MiniCourt(video_frames[0])
         

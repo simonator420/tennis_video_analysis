@@ -44,3 +44,7 @@ class CourtLineDetector:
             frame = self.draw_keypoints(frame, keypoints)
             output_video_frames.append(frame)
         return output_video_frames
+    
+    def get_court_keypoints(self, frames):
+        keypoints = self.predict(frames[0])
+        return keypoints
