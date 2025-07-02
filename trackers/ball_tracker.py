@@ -65,56 +65,65 @@ class BallTracker:
         return ball_detections
         
     def detect_frame(self, frame):
-        results = self.model.predict(frame, conf=0.2)[0]
-        
+        results = self.model.predict(frame,conf=0.15)[0]
+
         ball_dict = {}
-        # Stores best detected box for the ball
-        best_box = None
-        # Stores detection that is closest to the last location of the ball
-        min_dist = float('inf')
-
-        # Iterate all detected boxes in the frame
         for box in results.boxes:
-            # Get edges, center, width and height
-            x1, y1, x2, y2 = box.xyxy.tolist()[0]
-            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-            w, h = x2 - x1, y2 - y1
-
-            # Filters out boxes that are too big for the ball
-            if w > 50 or h > 50:
-                continue
-
-            # Determine the last location of the ball
-            if self.prev_position is not None:
-                # Calculate the new position of the ball
-                dist = np.linalg.norm(np.array([cx, cy]) - np.array(self.prev_position))
-                if dist > 150:
-                    continue  # Not the ball
-            else:
-                dist = 0 # In case of first frame
-            
-            # Saves curent detection as the best detection so far
-            if dist < min_dist:
-                min_dist = dist
-                best_box = [x1, y1, x2, y2]
-                self.prev_position = [cx, cy]
-
-        if best_box:
-            cx, cy = (best_box[0] + best_box[2]) / 2, (best_box[1] + best_box[3]) / 2
-            z = np.array([cx, cy])
-            self.kalman_filter.predict()
-            self.kalman_filter.update(z)
-            pred_x, pred_y = self.kalman_filter.x[:2]
-            # můžeš upravit i bounding box kolem pred_x, pred_y
-            ball_dict[1] = best_box
-        else:
-            # If the ball is not detected, make the Kalman prediction
-            self.kalman_filter.predict()
-            pred_x, pred_y = self.kalman_filter.x[:2]
-            size = 10  # Predicted size
-            ball_dict[1] = [pred_x - size, pred_y - size, pred_x + size, pred_y + size]
-
+            result = box.xyxy.tolist()[0]
+            ball_dict[1] = result
+        
         return ball_dict
+    
+        # results = self.model.predict(frame, conf=0.2)[0]
+        
+        # ball_dict = {}
+        # # Stores best detected box for the ball
+        # best_box = None
+        # # Stores detection that is closest to the last location of the ball
+        # min_dist = float('inf')
+
+        # # Iterate all detected boxes in the frame
+        # for box in results.boxes:
+        #     # Get edges, center, width and height
+        #     x1, y1, x2, y2 = box.xyxy.tolist()[0]
+        #     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+        #     w, h = x2 - x1, y2 - y1
+
+        #     # Filters out boxes that are too big for the ball
+        #     if w > 50 or h > 50:
+        #         continue
+
+        #     # Determine the last location of the ball
+        #     if self.prev_position is not None:
+        #         # Calculate the new position of the ball
+        #         dist = np.linalg.norm(np.array([cx, cy]) - np.array(self.prev_position))
+        #         if dist > 150:
+        #             continue  # Not the ball
+        #     else:
+        #         dist = 0 # In case of first frame
+            
+        #     # Saves curent detection as the best detection so far
+        #     if dist < min_dist:
+        #         min_dist = dist
+        #         best_box = [x1, y1, x2, y2]
+        #         self.prev_position = [cx, cy]
+
+        # if best_box:
+        #     cx, cy = (best_box[0] + best_box[2]) / 2, (best_box[1] + best_box[3]) / 2
+        #     z = np.array([cx, cy])
+        #     self.kalman_filter.predict()
+        #     self.kalman_filter.update(z)
+        #     pred_x, pred_y = self.kalman_filter.x[:2]
+        #     # můžeš upravit i bounding box kolem pred_x, pred_y
+        #     ball_dict[1] = best_box
+        # else:
+        #     # If the ball is not detected, make the Kalman prediction
+        #     self.kalman_filter.predict()
+        #     pred_x, pred_y = self.kalman_filter.x[:2]
+        #     size = 10  # Predicted size
+        #     ball_dict[1] = [pred_x - size, pred_y - size, pred_x + size, pred_y + size]
+
+        # return ball_dict
 
     
     def draw_bboxes(self, video_frames, ball_detections):
@@ -129,7 +138,7 @@ class BallTracker:
         
         return output_video_frames
     
-    def get_ball_shot_frames(self, ball_positions, court_keypoints):
+    def get_ball_shot_frames(self, ball_positions, court_keypoints, player_positions):
         ball_positions = [x.get(1,[]) for x in ball_positions]
 
         df_ball_positions = pd.DataFrame(ball_positions, columns=['x1', 'y1', 'x2', 'y2'])
@@ -205,5 +214,54 @@ class BallTracker:
         df_ball_positions.loc[false_hits_indices, 'ball_hit_filtered'] = 0
         
         frame_nums_with_ball_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1].index.tolist()
+        
+        if player_positions is not None:
+            max_distance = 75  # Tunable parameter (pixels)
+
+            filtered_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1]
+            final_hit_frames = []
+
+            for idx in filtered_hits.index:
+
+                if idx >= len(player_positions):
+                    continue  # Avoid index error
+
+                player_dict = player_positions[idx]
+                print(f"player_dict: {player_dict}")
+                ball_bbox = df_ball_positions.loc[idx, ['x1', 'y1', 'x2', 'y2']].values
+                ball_center = np.array([(ball_bbox[0] + ball_bbox[2]) / 2, (ball_bbox[1] + ball_bbox[3]) / 2])
+                print(f"ball_center: {ball_center}")
+                
+                closest_player_bbox = None
+                closest_distance_y = float('inf')
+                ball_y = ball_center[1]
+
+                for bbox in player_dict.values():
+                    player_y = (bbox[1] + bbox[3]) / 2
+                    y_distance = abs(player_y - ball_y)
+                    if y_distance < closest_distance_y:
+                        closest_distance_y = y_distance
+                        closest_player_bbox = bbox
+
+                print(f"idx: {idx}, closest_player_bbox: {closest_player_bbox}")
+
+                if closest_player_bbox is not None:
+                    # Extract edges of the player and ball bounding boxes
+                    px1, py1, px2, py2 = closest_player_bbox
+                    bx1, by1, bx2, by2 = ball_bbox
+
+                    # Calculate horizontal and vertical distances between the boxes
+                    dx = max(0, max(px1 - bx2, bx1 - px2))
+                    dy = max(0, max(py1 - by2, by1 - py2))
+
+                    # Compute shortest edge-to-edge distance (0 means overlapping)
+                    distance = np.hypot(dx, dy)
+                    print(f"tohle je distance {distance}")
+                    if distance <= max_distance:
+                        final_hit_frames.append(idx)
+      
+                print(" ")
+
+            return final_hit_frames
         
         return frame_nums_with_ball_hits
