@@ -196,7 +196,10 @@ class BallTracker:
 
         # Determine which side of the court the ball was on (True = bottom half, False = top half)
         df_ball_positions['ball_side'] = df_ball_positions['mid_y'] > net_y_position
-
+        
+        print(df_ball_positions[df_ball_positions['ball_hit']==1])
+        print("")
+        
         # Find all detected hits
         filtered_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1]
         print(f"Filtered hits {list(filtered_hits.index)}")
@@ -225,7 +228,7 @@ class BallTracker:
         frame_nums_with_ball_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1].index.tolist()
         
         if player_positions is not None:
-            max_distance = 20  # Tunable parameter (pixels)
+            max_distance = 80  # Tunable parameter (pixels)
 
             filtered_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1]
             final_hit_frames = []
@@ -273,6 +276,7 @@ class BallTracker:
                 
             print(f"final_hit_frames: {final_hit_frames}")
             
+            # Check if two hits werent on the same side
             for i in range(len(final_hit_frames) - 1):
                 current_idx = filtered_hits.index[i]
                 next_idx = filtered_hits.index[i + 1]
@@ -280,10 +284,19 @@ class BallTracker:
                 current_side = df_ball_positions.loc[current_idx, 'ball_side']
                 next_side = df_ball_positions.loc[next_idx, 'ball_side']
 
-                if current_side == next_side:
-                    final_hit_frames.remove(current_idx)
-            
-            print(false_hits_indices)
+                if current_side == next_side:                    
+                    current_group_id = df_ball_positions.loc[current_idx, 'group_id']
+                    group_indexes = df_ball_positions[df_ball_positions['group_id'] == current_group_id].index
+                    sides = df_ball_positions.loc[group_indexes, 'ball_side']
+                    sides_counts = sides.value_counts()
+                    majority_side = sides_counts.idxmax()
+                    ratio = sides_counts.max() / len(sides)
+                    
+                    if ratio > 0.5 and current_side == majority_side:
+                        final_hit_frames.remove(current_idx)
+                        print(f"FALSE HIT REMOVED: {current_idx}, majority_side: {majority_side}, ratio: {ratio:.2f}")
+
+            print(final_hit_frames)
             print("")
 
             return final_hit_frames

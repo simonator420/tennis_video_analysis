@@ -16,10 +16,10 @@ def main():
     player_tracker = PlayerTracker(model_path='yolov8x')
     ball_tracker = BallTracker(model_path='models/yolo5_last.pt')
     player_detections = player_tracker.detect_frames(video_frames,
-                                                     read_from_stub=True,
+                                                     read_from_stub=False,
                                                      stub_path="tracker_stubs/player_detections.pkl")
     ball_detections = ball_tracker.detect_frames(video_frames,
-                                                 read_from_stub=True,
+                                                 read_from_stub=False,
                                                  stub_path="tracker_stubs/ball_detections.pkl")
     
     ball_detections = ball_tracker.interpolate_ball_positions(ball_detections)
@@ -53,7 +53,7 @@ def main():
     for i, frame in enumerate(output_video_frames):
         cv2.putText(frame, f"Frame: {i}",(10,30),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
-    # save_video(output_video_frames, "output_videos/output_video.avi", fps)
+    save_video(output_video_frames, "output_videos/output_video.avi", fps)
     
 if __name__ == "__main__":
     main()
