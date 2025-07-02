@@ -179,10 +179,13 @@ class BallTracker:
                     df_ball_positions.loc[i, 'ball_hit'] = 1
         
         df_ball_positions['group_id'] = (df_ball_positions['ball_hit'] != df_ball_positions['ball_hit'].shift()).cumsum()
-
+        
+        print(df_ball_positions[df_ball_positions['ball_hit']==1])
+        print("")
         # Keep only the hit detection from the last frame of the hit group
         last_hits = df_ball_positions[df_ball_positions['ball_hit'] == 1].groupby('group_id').tail(1)
-
+        print(last_hits)
+        print("")
         df_ball_positions['ball_hit_filtered'] = 0
         df_ball_positions.loc[last_hits.index, 'ball_hit_filtered'] = 1
 
@@ -196,19 +199,25 @@ class BallTracker:
 
         # Find all detected hits
         filtered_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1]
-
+        print(f"Filtered hits {list(filtered_hits.index)}")
+        print("")
+        
         # Find false hits - if two in a row are on the same side of the court, we cancel the first one
         false_hits_indices = []
 
-        for i in range(len(filtered_hits) - 1):
-            current_idx = filtered_hits.index[i]
-            next_idx = filtered_hits.index[i + 1]
+        # for i in range(len(filtered_hits) - 1):
+        #     current_idx = filtered_hits.index[i]
+        #     next_idx = filtered_hits.index[i + 1]
 
-            current_side = df_ball_positions.loc[current_idx, 'ball_side']
-            next_side = df_ball_positions.loc[next_idx, 'ball_side']
+        #     current_side = df_ball_positions.loc[current_idx, 'ball_side']
+        #     next_side = df_ball_positions.loc[next_idx, 'ball_side']
 
-            if current_side == next_side:
-                false_hits_indices.append(current_idx)
+        #     if current_side == next_side:
+        #         print(f"FALSEEE HIT!!!: {current_idx}, current_side: {current_side}, next_side: {next_side}")
+        #         false_hits_indices.append(current_idx)
+        
+        print(false_hits_indices)
+        print("")
 
         # Cancel false hits
         df_ball_positions.loc[false_hits_indices, 'ball_hit_filtered'] = 0
@@ -216,7 +225,7 @@ class BallTracker:
         frame_nums_with_ball_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1].index.tolist()
         
         if player_positions is not None:
-            max_distance = 75  # Tunable parameter (pixels)
+            max_distance = 20  # Tunable parameter (pixels)
 
             filtered_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1]
             final_hit_frames = []
@@ -261,6 +270,21 @@ class BallTracker:
                         final_hit_frames.append(idx)
       
                 print(" ")
+                
+            print(f"final_hit_frames: {final_hit_frames}")
+            
+            for i in range(len(final_hit_frames) - 1):
+                current_idx = filtered_hits.index[i]
+                next_idx = filtered_hits.index[i + 1]
+
+                current_side = df_ball_positions.loc[current_idx, 'ball_side']
+                next_side = df_ball_positions.loc[next_idx, 'ball_side']
+
+                if current_side == next_side:
+                    final_hit_frames.remove(current_idx)
+            
+            print(false_hits_indices)
+            print("")
 
             return final_hit_frames
         
