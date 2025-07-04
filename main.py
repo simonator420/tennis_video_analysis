@@ -2,6 +2,7 @@ from utils import (read_video,
                    save_video,
                    measure_distance,
                    convert_pixel_distance_to_meters,
+                   convert_meters_to_pixel_distance,
                    draw_player_stats)
 
 from trackers import PlayerTracker, BallTracker
@@ -55,18 +56,18 @@ def main():
         'player_1_total_player_speed':0,
         'player_1_last_player_speed':0,
 
-        'player_3_number_of_shots':0,
-        'player_3_total_shot_speed':0,
-        'player_3_last_shot_speed':0,
-        'player_3_total_player_speed':0,
-        'player_3_last_player_speed':0,
+        'player_2_number_of_shots':0,
+        'player_2_total_shot_speed':0,
+        'player_2_last_shot_speed':0,
+        'player_2_total_player_speed':0,
+        'player_2_last_player_speed':0,
     } ]
     
     
     for ball_shot_ind in range(len(ball_shot_frames)-1):
         start_frame = ball_shot_frames[ball_shot_ind]
         end_frame = ball_shot_frames[ball_shot_ind+1]
-        ball_shot_time_in_seconds = (end_frame-start_frame) / 60 # Number of fps
+        ball_shot_time_in_seconds = (end_frame-start_frame) / 24 # Number of fps
 
         # Get distance covered by the ball
         distance_covered_by_ball_pixels = measure_distance(ball_mini_court_detections[start_frame][1],
@@ -90,7 +91,7 @@ def main():
         
 
         # opponent player speed
-        opponent_player_id = 1 if player_shot_ball == 3 else 3
+        opponent_player_id = 1 if player_shot_ball == 2 else 2
         
         print(f"opponent_player_id: {opponent_player_id}, player_shot_ball: {player_shot_ball}")
         
@@ -120,9 +121,9 @@ def main():
     player_stats_data_df = player_stats_data_df.ffill()
 
     player_stats_data_df['player_1_average_shot_speed'] = player_stats_data_df['player_1_total_shot_speed']/player_stats_data_df['player_1_number_of_shots']
-    player_stats_data_df['player_3_average_shot_speed'] = player_stats_data_df['player_3_total_shot_speed']/player_stats_data_df['player_3_number_of_shots']
-    player_stats_data_df['player_1_average_player_speed'] = player_stats_data_df['player_1_total_player_speed']/player_stats_data_df['player_3_number_of_shots']
-    player_stats_data_df['player_3_average_player_speed'] = player_stats_data_df['player_3_total_player_speed']/player_stats_data_df['player_1_number_of_shots']
+    player_stats_data_df['player_2_average_shot_speed'] = player_stats_data_df['player_2_total_shot_speed']/player_stats_data_df['player_2_number_of_shots']
+    player_stats_data_df['player_1_average_player_speed'] = player_stats_data_df['player_1_total_player_speed']/player_stats_data_df['player_2_number_of_shots']
+    player_stats_data_df['player_2_average_player_speed'] = player_stats_data_df['player_2_total_player_speed']/player_stats_data_df['player_1_number_of_shots']
 
      
     # Draw Player Bounding Boxes
@@ -144,7 +145,7 @@ def main():
     for i, frame in enumerate(output_video_frames):
         cv2.putText(frame, f"Frame: {i}",(10,30),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
-    # save_video(output_video_frames, "output_videos/output_video.avi", fps)
+    save_video(output_video_frames, "output_videos/output_video.avi", fps)
     
 if __name__ == "__main__":
     main()

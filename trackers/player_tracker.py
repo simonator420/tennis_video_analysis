@@ -36,15 +36,22 @@ class PlayerTracker:
         for player_dict in player_detections:
             filtered_player_dict = {track_id: bbox for track_id, bbox in player_dict.items() if track_id in chosen_players}
             filtered_player_detections.append(filtered_player_dict)
-
+        
+        # Assure that player ids are 1 and 2
+        for dict in filtered_player_detections:
+            if chosen_players[0] != 1:
+                dict[1] = dict.pop(chosen_players[0])
+            elif chosen_players[1] != 2:
+                dict[2] = dict.pop(chosen_players[1])
+        
+        print(filtered_player_detections[-1])
+        
         # Determine which player is on upper side of court
-        player_1_y = filtered_player_detections[0][chosen_players[0]][1] + filtered_player_detections[0][chosen_players[0]][3]
-        player_2_y = filtered_player_detections[0][chosen_players[1]][1] + filtered_player_detections[0][chosen_players[1]][3]
+        player_1_y = filtered_player_detections[0][1][1] + filtered_player_detections[0][1][3]
+        player_2_y = filtered_player_detections[0][2][1] + filtered_player_detections[0][2][3]
             
         upper_player = lambda player_1_y, player_2_y: 1 if player_1_y > player_2_y else 2
         print(f"Tohle je upper player: {upper_player(player_1_y, player_2_y)}")
-        
-        
         
         return filtered_player_detections
         

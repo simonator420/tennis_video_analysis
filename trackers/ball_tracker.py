@@ -180,12 +180,14 @@ class BallTracker:
         
         df_ball_positions['group_id'] = (df_ball_positions['ball_hit'] != df_ball_positions['ball_hit'].shift()).cumsum()
         
-        print(df_ball_positions[df_ball_positions['ball_hit']==1])
-        print("")
+        # print(df_ball_positions[df_ball_positions['ball_hit']==1])
+        # print("")
         # Keep only the hit detection from the last frame of the hit group
         last_hits = df_ball_positions[df_ball_positions['ball_hit'] == 1].groupby('group_id').tail(1)
-        print(last_hits)
-        print("")
+
+        # print(last_hits)
+        # print("")
+
         df_ball_positions['ball_hit_filtered'] = 0
         df_ball_positions.loc[last_hits.index, 'ball_hit_filtered'] = 1
 
@@ -197,13 +199,14 @@ class BallTracker:
         # Determine which side of the court the ball was on (True = bottom half, False = top half)
         df_ball_positions['ball_side'] = df_ball_positions['mid_y'] > net_y_position
         
-        print(df_ball_positions[df_ball_positions['ball_hit']==1])
-        print("")
+        # print(df_ball_positions[df_ball_positions['ball_hit']==1])
+        # print("")
         
         # Find all detected hits
         filtered_hits = df_ball_positions[df_ball_positions['ball_hit_filtered'] == 1]
-        print(f"Filtered hits {list(filtered_hits.index)}")
-        print("")
+
+        # print(f"Filtered hits {list(filtered_hits.index)}")
+        # print("")
         
         # Find false hits - if two in a row are on the same side of the court, we cancel the first one
         false_hits_indices = []
