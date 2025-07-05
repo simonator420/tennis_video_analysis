@@ -3,6 +3,7 @@ import cv2
 import pickle
 import pandas as pd
 from filterpy.kalman import KalmanFilter
+
 import numpy as np
 
 
@@ -158,28 +159,32 @@ class BallTracker:
         
         df_ball_positions['ball_hit'] = 0
         
-        min_change_frames = 25
+        
+        minimum_change_frames_for_hit = 25
+        for i in range(1,len(df_ball_positions)- int(minimum_change_frames_for_hit*1.2)):
+            negative_position_change = df_ball_positions['delta_y'].iloc[i] >0 and df_ball_positions['delta_y'].iloc[i+1] <0
+            positive_position_change = df_ball_positions['delta_y'].iloc[i] <0 and df_ball_positions['delta_y'].iloc[i+1] >0
 
-        for i in range(1, len(df_ball_positions) - int(min_change_frames*1.2)):
-            negative_change = df_ball_positions['delta_y_smooth'].iloc[i] > 0 and df_ball_positions['delta_y_smooth'].iloc[i+1]
-            positive_change = df_ball_positions['delta_y_smooth'].iloc[i] < 0 and df_ball_positions['delta_y_smooth'].iloc[i+1]
-            
-            if negative_change or positive_change:
-                change_count = 0
-                for change_frame in range(i+1, i+int(min_change_frames*1.2)):
-                    negative_position_change_following_frame = df_ball_positions['delta_y_smooth'].iloc[i] >0 and df_ball_positions['delta_y_smooth'].iloc[change_frame] <0
-                    positive_position_change_following_frame = df_ball_positions['delta_y_smooth'].iloc[i] <0 and df_ball_positions['delta_y_smooth'].iloc[change_frame] >0
-                    
-                    if negative_change and negative_position_change_following_frame:
+            if negative_position_change or positive_position_change:
+                change_count = 0 
+                for change_frame in range(i+1, i+int(minimum_change_frames_for_hit*1.2)+1):
+                    negative_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] >0 and df_ball_positions['delta_y'].iloc[change_frame] <0
+                    positive_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] <0 and df_ball_positions['delta_y'].iloc[change_frame] >0
+
+                    if negative_position_change and negative_position_change_following_frame:
                         change_count+=1
-                    elif positive_change and positive_position_change_following_frame:
+                    elif positive_position_change and positive_position_change_following_frame:
                         change_count+=1
-            
-                if change_count>min_change_frames-1:
+                        
+                # if i in range(110, 180):
+                #         print(f"Tohle je change count {change_count} a frame {i}")
+
+                # This might be less be less sensitive, but fake detections will be filtered out later
+                if change_count>=minimum_change_frames_for_hit-1:
                     df_ball_positions.loc[i, 'ball_hit'] = 1
         
         df_ball_positions['group_id'] = (df_ball_positions['ball_hit'] != df_ball_positions['ball_hit'].shift()).cumsum()
-        
+        # print(df_ball_positions.iloc[110:150])
         # print(df_ball_positions[df_ball_positions['ball_hit']==1])
         # print("")
         # Keep only the hit detection from the last frame of the hit group
@@ -222,8 +227,8 @@ class BallTracker:
         #         print(f"FALSEEE HIT!!!: {current_idx}, current_side: {current_side}, next_side: {next_side}")
         #         false_hits_indices.append(current_idx)
         
-        print(false_hits_indices)
-        print("")
+        # print(false_hits_indices)
+        # print("")
 
         # Cancel false hits
         df_ball_positions.loc[false_hits_indices, 'ball_hit_filtered'] = 0
@@ -242,10 +247,10 @@ class BallTracker:
                     continue  # Avoid index error
 
                 player_dict = player_positions[idx]
-                print(f"player_dict: {player_dict}")
+                # print(f"player_dict: {player_dict}")
                 ball_bbox = df_ball_positions.loc[idx, ['x1', 'y1', 'x2', 'y2']].values
                 ball_center = np.array([(ball_bbox[0] + ball_bbox[2]) / 2, (ball_bbox[1] + ball_bbox[3]) / 2])
-                print(f"ball_center: {ball_center}")
+                # print(f"ball_center: {ball_center}")
                 
                 closest_player_bbox = None
                 closest_distance_y = float('inf')
@@ -258,7 +263,7 @@ class BallTracker:
                         closest_distance_y = y_distance
                         closest_player_bbox = bbox
 
-                print(f"idx: {idx}, closest_player_bbox: {closest_player_bbox}")
+                # print(f"idx: {idx}, closest_player_bbox: {closest_player_bbox}")
 
                 if closest_player_bbox is not None:
                     # Extract edges of the player and ball bounding boxes
@@ -271,13 +276,13 @@ class BallTracker:
 
                     # Compute shortest edge-to-edge distance (0 means overlapping)
                     distance = np.hypot(dx, dy)
-                    print(f"tohle je distance {distance}")
+                    # print(f"tohle je distance {distance}")
                     if distance <= max_distance:
                         final_hit_frames.append(idx)
       
-                print(" ")
+                # print(" ")
                 
-            print(f"final_hit_frames: {final_hit_frames}")
+            # print(f"final_hit_frames: {final_hit_frames}")
             
             # Check if two hits werent on the same side
             for i in range(len(final_hit_frames) - 1):
@@ -297,10 +302,10 @@ class BallTracker:
                     
                     if ratio > 0.5 and current_side == majority_side:
                         final_hit_frames.remove(current_idx)
-                        print(f"FALSE HIT REMOVED: {current_idx}, majority_side: {majority_side}, ratio: {ratio:.2f}")
+            #             print(f"FALSE HIT REMOVED: {current_idx}, majority_side: {majority_side}, ratio: {ratio:.2f}")
 
-            print(final_hit_frames)
-            print("")
+            # print(final_hit_frames)
+            # print("")
 
             return final_hit_frames
         

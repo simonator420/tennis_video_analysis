@@ -5,6 +5,7 @@ input_videos
 training
 .venv
 trackers/__pycache__
+yolov8x-pose.pt
 yolov5s.pt
 yolov8x.pt
 .gitignore

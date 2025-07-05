@@ -44,7 +44,7 @@ class PlayerTracker:
             elif chosen_players[1] != 2:
                 dict[2] = dict.pop(chosen_players[1])
         
-        print(filtered_player_detections[-1])
+        # print(filtered_player_detections[-1])
         
         # Determine which player is on upper side of court
         player_1_y = filtered_player_detections[0][1][1] + filtered_player_detections[0][1][3]

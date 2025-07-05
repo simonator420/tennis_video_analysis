@@ -191,7 +191,7 @@ class MiniCourt():
         return  mini_court_player_position
 
     
-    def convert_bounding_boxes_to_mini_court_coordinates(self, player_boxes, ball_boxes, original_court_key_points):
+    def convert_bounding_boxes_to_mini_court_coordinates(self, player_boxes, ball_boxes, ball_hits, original_court_key_points):
         player_heights = {
             1: constants.PLAYER_1_HEIGHT_METERS,
             2: constants.PLAYER_2_HEIGHT_METERS
@@ -199,6 +199,10 @@ class MiniCourt():
 
         output_player_boxes = []
         output_ball_boxes = []
+        previous_positions = {}
+        
+        for hit in ball_hits:
+            print(f"Ball hit index {hit}, ball box v tom bode {ball_boxes[hit]} player_boxes v tom bode {player_boxes[hit]}")
 
         for i, player_bbox in enumerate(player_boxes):
             ball_box = ball_boxes[i][1]
@@ -227,6 +231,15 @@ class MiniCourt():
                                                                             player_heights[player_id]
                                                                             )
                 
+                if player_id in previous_positions:
+                    prev_pos = previous_positions[player_id]
+                    dx = mini_court_player_position[0] - prev_pos[0]
+                    dy = mini_court_player_position[1] - prev_pos[1]
+                    distance = (dx**2 + dy**2)**0.5
+                    if distance > 30:  # práh můžeš upravit dle potřeby
+                        print(f"POZOR: hráč {player_id} udělal skok {distance:.2f} px mezi snímky {i-1} a {i}")
+                
+                previous_positions[player_id] = mini_court_player_position
                 output_player_bboxes_dict[player_id] = mini_court_player_position
 
                 if closest_player_id_to_ball == player_id:
@@ -243,8 +256,46 @@ class MiniCourt():
                                                                             )
                     output_ball_boxes.append({1:mini_court_player_position})
             output_player_boxes.append(output_player_bboxes_dict)
+        
+        ball_line_segments = []
 
-        return output_player_boxes, output_ball_boxes
+        for i in range(len(ball_hits) - 1):
+            start_frame = ball_hits[i]
+            end_frame = ball_hits[i + 1]
+
+            # Zjistíme pozici míčku ve startovacím a koncovém framu
+            ball_start = ball_boxes[start_frame][1]
+            ball_end = ball_boxes[end_frame][1]
+            ball_pos_start = get_center_of_bbox(ball_start)
+            ball_pos_end = get_center_of_bbox(ball_end)
+
+            # Zjistíme, který hráč je blíže míčku v daném framu, abychom získali správnou výšku
+            player_bbox_start = player_boxes[start_frame]
+            closest_player_start = min(player_bbox_start.keys(), key=lambda x: measure_distance(ball_pos_start, get_center_of_bbox(player_bbox_start[x])))
+            player_height_pixels_start = get_height_of_bbox(player_bbox_start[closest_player_start])
+            closest_kp_start_idx = get_closest_keypoint_index(ball_pos_start, original_court_key_points, [0,2,12,13])
+            closest_kp_start = (original_court_key_points[closest_kp_start_idx * 2], original_court_key_points[closest_kp_start_idx * 2 + 1])
+            mini_pos_start = self.get_mini_court_coordinates(ball_pos_start, closest_kp_start, closest_kp_start_idx,
+                                                            player_height_pixels_start, player_heights[closest_player_start])
+
+            player_bbox_end = player_boxes[end_frame]
+            closest_player_end = min(player_bbox_end.keys(), key=lambda x: measure_distance(ball_pos_end, get_center_of_bbox(player_bbox_end[x])))
+            player_height_pixels_end = get_height_of_bbox(player_bbox_end[closest_player_end])
+            closest_kp_end_idx = get_closest_keypoint_index(ball_pos_end, original_court_key_points, [0,2,12,13])
+            closest_kp_end = (original_court_key_points[closest_kp_end_idx * 2], original_court_key_points[closest_kp_end_idx * 2 + 1])
+            mini_pos_end = self.get_mini_court_coordinates(ball_pos_end, closest_kp_end, closest_kp_end_idx,
+                                                        player_height_pixels_end, player_heights[closest_player_end])
+
+            # Vytvoříme segment: zobrazí se mezi start_frame a end_frame
+            ball_line_segments.append({
+                "start_frame": start_frame,
+                "end_frame": end_frame,
+                "line": [{1: mini_pos_start}, {1: mini_pos_end}]
+            })
+            
+
+
+        return output_player_boxes, output_ball_boxes, ball_line_segments
     
     def draw_points_on_mini_court(self, frames, positions, color=(0,255,0)):
         for i, frame in enumerate(frames):
@@ -253,4 +304,65 @@ class MiniCourt():
                 x= int(x)
                 y= int(y)
                 cv2.circle(frame, (x,y), 5, color, -1)
+        return frames
+    
+    def smooth_positions(self, positions, window=5):
+        if len(positions) < 3:
+            return positions
+        
+        # Step 1: Remove outliers
+        smoothed = []
+        for i, pos in enumerate(positions):
+            if 1 not in pos:
+                smoothed.append(pos)
+                continue
+            
+            # Get surrounding positions
+            surrounding = []
+            for j in range(max(0, i-2), min(len(positions), i+3)):
+                if j != i and 1 in positions[j]:
+                    surrounding.append(np.array(positions[j][1]))
+            
+            if surrounding:
+                current = np.array(pos[1])
+                avg_pos = np.mean(surrounding, axis=0)
+                distance = np.linalg.norm(current - avg_pos)
+                
+                # If too far from average, use average instead
+                if distance > 50:  # Adjust threshold as needed
+                    smoothed.append({1: tuple(avg_pos)})
+                else:
+                    smoothed.append(pos)
+            else:
+                smoothed.append(pos)
+        
+        # Step 2: Moving average
+        final_smooth = []
+        for i, pos in enumerate(smoothed):
+            if 1 not in pos:
+                final_smooth.append(pos)
+                continue
+            
+            # Get window of valid positions
+            valid_positions = []
+            for j in range(max(0, i-window//2), min(len(smoothed), i+window//2+1)):
+                if 1 in smoothed[j]:
+                    valid_positions.append(np.array(smoothed[j][1]))
+            
+            if valid_positions:
+                avg_pos = np.mean(valid_positions, axis=0)
+                final_smooth.append({1: tuple(avg_pos)})
+            else:
+                final_smooth.append(pos)
+        
+        return final_smooth
+
+    def draw_ball_trajectory_lines(self, frames, ball_line_segments, color=(0,255,255), thickness=2):
+        for segment in ball_line_segments:
+            start_f = segment["start_frame"]
+            end_f = segment["end_frame"]
+            p1 = segment["line"][0][1]
+            p2 = segment["line"][1][1]
+            for i in range(start_f, min(end_f, len(frames))):
+                cv2.line(frames[i], (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), color, thickness)
         return frames

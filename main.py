@@ -41,12 +41,16 @@ def main():
     
     # Detect ball shots
     ball_shot_frames = ball_tracker.get_ball_shot_frames(ball_detections, court_keypoints, player_detections)
-    print(ball_shot_frames)
         
     # Mini Court
     mini_court = MiniCourt(video_frames[0])
         
-    player_mini_court_detections, ball_mini_court_detections = mini_court.convert_bounding_boxes_to_mini_court_coordinates(player_detections, ball_detections, court_keypoints)
+    player_mini_court_detections, ball_mini_court_detections, ball_line_segments = mini_court.convert_bounding_boxes_to_mini_court_coordinates(
+        player_detections, ball_detections, ball_shot_frames, court_keypoints
+    )
+    
+    ball_mini_court_detections = mini_court.smooth_positions(ball_mini_court_detections)
+
     
     player_stats_data = [{
         'frame_num':0,
@@ -80,7 +84,7 @@ def main():
         # Speed of the ball shot in km/h
         speed_of_ball_shot = distance_covered_by_ball_meters/ball_shot_time_in_seconds * 3.6
         
-        print(f"speed_of_ball_shot: {speed_of_ball_shot}")
+        # print(f"speed_of_ball_shot: {speed_of_ball_shot}")
 
         # player who the ball
         player_positions = player_mini_court_detections[start_frame]
@@ -93,7 +97,7 @@ def main():
         # opponent player speed
         opponent_player_id = 1 if player_shot_ball == 2 else 2
         
-        print(f"opponent_player_id: {opponent_player_id}, player_shot_ball: {player_shot_ball}")
+        # print(f"opponent_player_id: {opponent_player_id}, player_shot_ball: {player_shot_ball}")
         
         distance_covered_by_opponent_pixels = measure_distance(player_mini_court_detections[start_frame][opponent_player_id],
                                                                 player_mini_court_detections[end_frame][opponent_player_id])
