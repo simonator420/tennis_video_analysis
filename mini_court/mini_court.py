@@ -16,10 +16,10 @@ import numpy as np
 
 class MiniCourt():
     def __init__(self, frame):
-        self.drawing_rectangle_width = 250
-        self.drawing_rectangle_height = 500
-        self.buffer = 50
-        self.padding_court = 20
+        self.drawing_rectangle_width = 320
+        self.drawing_rectangle_height = 665
+        self.buffer = 55 # space from the edge to the rectangle
+        self.padding_court = 35 # space from the mini court to the rectangle
         
         self.set_canvas_background_box_position(frame)
         self.set_mini_court_position()
@@ -84,7 +84,7 @@ class MiniCourt():
             (4, 5),
             (6,7),
             (1,3),
-            
+            (12,13),
             (0,1),
             (8,9),
             (10,11),
@@ -94,7 +94,7 @@ class MiniCourt():
     
     def set_mini_court_position(self):
         self.court_start_x = self.start_x + self.padding_court
-        self.court_start_y = self.start_y + self.padding_court
+        self.court_start_y = self.start_y + 60
         self.court_end_x = self.end_x - self.padding_court
         self.court_end_y = self.end_y - self.padding_court
         self.court_drawing_width = self.court_end_x - self.court_start_x
@@ -109,10 +109,10 @@ class MiniCourt():
         
     def draw_court(self, frame):
         # Draw the points
-        for i in range(0, len(self.drawing_key_points), 2):
-            x = int(self.drawing_key_points[i])
-            y = int(self.drawing_key_points[i+1])
-            cv2.circle(frame, (x,y),5, (0,0,255),-1)
+        # for i in range(0, len(self.drawing_key_points), 2):
+        #     x = int(self.drawing_key_points[i])
+        #     y = int(self.drawing_key_points[i+1])
+        #     cv2.circle(frame, (x,y),5, (0,0,255),-1)
             
         # Draw the lines
         for line in self.lines:

@@ -1,5 +1,7 @@
 import cv2
 import ffmpeg
+from sklearn.cluster import KMeans
+import numpy as np
 
 
 def read_video(video_path):
@@ -29,9 +31,12 @@ def read_video(video_path):
         if not ret:
             break
         frames.append(frame)
+        
+    if frames:
+        dominant_color = get_dominant_color(frames[0])
     cap.release()
-    print(f"Number of fps: {fps}")
-    return frames, fps
+
+    return frames, fps, dominant_color
 
 def save_video(output_video_frames, output_video_path, fps):
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -39,3 +44,35 @@ def save_video(output_video_frames, output_video_path, fps):
     for frame in output_video_frames:
         out.write(frame)
     out.release()
+    
+
+def get_dominant_color(image, k=1):
+    # Převod na RGB, pokud je potřeba
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Zploštění obrazu na pole tvaru (počet_pixelů, 3)
+    pixels = image.reshape(-1, 3)
+
+    # Použijeme KMeans k určení dominantních barev
+    kmeans = KMeans(n_clusters=k, random_state=0)
+    kmeans.fit(pixels)
+
+    # Center of the biggest cluster
+    dominant_color = kmeans.cluster_centers_[0].astype(int)
+    
+    named_colors = {
+        'orange': np.array([255, 165, 0]),
+        'green': np.array([0, 128, 0]),
+        'blue':  np.array([0, 0, 255])
+    }
+
+    # Compute distances
+    min_distance = float('inf')
+    closest_name = None
+    for name, ref_color in named_colors.items():
+        distance = np.linalg.norm(dominant_color - ref_color)
+        if distance < min_distance:
+            min_distance = distance
+            closest_name = name
+
+    return tuple(ref_color)  # (R, G, B)
