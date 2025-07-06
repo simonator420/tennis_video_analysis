@@ -147,7 +147,7 @@ def main():
     
     # Draw frame number
     for i, frame in enumerate(output_video_frames):
-        cv2.putText(frame, f"Frame: {i}",(10,30),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(frame, f"Frame: {i}",(30,70),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
     save_video(output_video_frames, "output_videos/output_video.avi", fps)
     
