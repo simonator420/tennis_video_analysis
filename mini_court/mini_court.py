@@ -131,15 +131,15 @@ class MiniCourt():
         shapes = np.zeros_like(frame,np.uint8)
         
         # Draw the rectangle
-        # cv2.rectangle(shapes, (self.start_x, self.start_y), (self.end_x, self.end_y), (int(dominant_color[2]), int(dominant_color[1]), int(dominant_color[0])), cv2.FILLED)
-        cv2.rectangle(frame, (self.start_x, self.start_y), (self.end_x, self.end_y), (int(dominant_color[2]), int(dominant_color[1]), int(dominant_color[0])), cv2.FILLED)
+        cv2.rectangle(shapes, (self.start_x, self.start_y), (self.end_x, self.end_y), (int(dominant_color[2]), int(dominant_color[1]), int(dominant_color[0])), cv2.FILLED)
+        # cv2.rectangle(frame, (self.start_x, self.start_y), (self.end_x, self.end_y), (int(dominant_color[2]), int(dominant_color[1]), int(dominant_color[0])), cv2.FILLED)
         out = frame.copy()
-        alpha=0.1
+        alpha=0.07
         mask = shapes.astype(bool)
         out[mask] = cv2.addWeighted(frame, alpha, shapes, 1 - alpha, 0)[mask]
         
-        # return out
-        return frame
+        return out
+        # return frame
 
     def draw_mini_court(self,frames,background_color):
         output_frames = []
