@@ -18,7 +18,7 @@ def main():
     # Read Video
     input_video_path = "input_videos/input_video5.mov"
     video_frames, fps, dominant_color = read_video(input_video_path)
-    
+        
     # Detect Players and Balls
     player_tracker = PlayerTracker(model_path='yolov8x')
     ball_tracker = BallTracker(model_path='models/yolo5_last.pt')
@@ -138,7 +138,7 @@ def main():
     output_video_frames = court_line_detector.draw_keypoints_on_video(output_video_frames, court_keypoints)
         
     # Draw Mini Court
-    output_video_frames = mini_court.draw_mini_court(output_video_frames)
+    output_video_frames = mini_court.draw_mini_court(output_video_frames, dominant_color)
     output_video_frames = mini_court.draw_points_on_mini_court(output_video_frames, player_mini_court_detections)
     output_video_frames = mini_court.draw_points_on_mini_court(output_video_frames, ball_mini_court_detections, color=(0,255,255))
     
@@ -149,7 +149,7 @@ def main():
     for i, frame in enumerate(output_video_frames):
         cv2.putText(frame, f"Frame: {i}",(30,70),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
-    # save_video(output_video_frames, "output_videos/output_video.avi", fps)
+    save_video(output_video_frames, "output_videos/output_video.avi", fps)
     
 if __name__ == "__main__":
     main()

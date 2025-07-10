@@ -8,9 +8,7 @@ def read_video(video_path):
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
     cap.release()
-    
-    print(f"Number of fps: {fps}")
-    
+        
     if fps > 24:
         reduced_path = "./input_videos/reduced_input_video.mp4"
 
@@ -61,7 +59,7 @@ def get_dominant_color(image, k=1):
     dominant_color = kmeans.cluster_centers_[0].astype(int)
     
     named_colors = {
-        'orange': np.array([255, 165, 0]),
+        'orange': np.array([181, 111, 74]),
         'green': np.array([0, 128, 0]),
         'blue':  np.array([0, 0, 255])
     }
@@ -74,5 +72,5 @@ def get_dominant_color(image, k=1):
         if distance < min_distance:
             min_distance = distance
             closest_name = name
-
-    return tuple(ref_color)  # (R, G, B)
+    
+    return tuple(named_colors[closest_name])  # (R, G, B)

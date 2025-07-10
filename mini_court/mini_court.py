@@ -118,30 +118,34 @@ class MiniCourt():
         for line in self.lines:
             start_point = (int(self.drawing_key_points[line[0]*2]), int(self.drawing_key_points[line[0]*2+1]))
             end_point = (int(self.drawing_key_points[line[1]*2]), int(self.drawing_key_points[line[1]*2+1]))
-            cv2.line(frame, start_point, end_point, (0, 0, 0), 2)
+            cv2.line(frame, start_point, end_point, (255, 255, 255), 2)
         
         # Draw the net
         net_start_point = (self.drawing_key_points[0], int((self.drawing_key_points[1] + self.drawing_key_points[5])/2))      
         net_end_point = (self.drawing_key_points[2], int((self.drawing_key_points[1] + self.drawing_key_points[5])/2))  
-        cv2.line(frame, net_start_point, net_end_point, (255, 0, 0), 2)
+        cv2.line(frame, net_start_point, net_end_point, (255, 255, 255), 2)
         
         return frame
     
-    def draw_background_rectangle(self,frame):
+    def draw_background_rectangle(self,frame,dominant_color):
         shapes = np.zeros_like(frame,np.uint8)
+        
         # Draw the rectangle
-        cv2.rectangle(shapes, (self.start_x, self.start_y), (self.end_x, self.end_y), (255, 255, 255), cv2.FILLED)
+        # cv2.rectangle(shapes, (self.start_x, self.start_y), (self.end_x, self.end_y), (int(dominant_color[2]), int(dominant_color[1]), int(dominant_color[0])), cv2.FILLED)
+        cv2.rectangle(frame, (self.start_x, self.start_y), (self.end_x, self.end_y), (int(dominant_color[2]), int(dominant_color[1]), int(dominant_color[0])), cv2.FILLED)
         out = frame.copy()
-        alpha=0.5
+        alpha=0.1
         mask = shapes.astype(bool)
         out[mask] = cv2.addWeighted(frame, alpha, shapes, 1 - alpha, 0)[mask]
-                
-        return out
+        
+        # return out
+        return frame
 
-    def draw_mini_court(self,frames):
+    def draw_mini_court(self,frames,background_color):
         output_frames = []
+
         for frame in frames:
-            frame = self.draw_background_rectangle(frame)
+            frame = self.draw_background_rectangle(frame, background_color)
             frame = self.draw_court(frame)
             output_frames.append(frame)
             
