@@ -26,8 +26,9 @@ def draw_player_stats(output_video_frames, player_stats):
         end_y = start_y+height
 
         overlay = frame.copy()
-        cv2.rectangle(overlay, (start_x, start_y), (end_x, end_y), (0, 0, 0), -1)
-        alpha = 0.5 
+        grey_tone = 40
+        cv2.rectangle(overlay, (start_x, start_y), (end_x, end_y), (grey_tone, grey_tone, grey_tone), cv2.FILLED)
+        alpha = 0.93
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
         output_video_frames[index] = frame
 

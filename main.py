@@ -139,8 +139,8 @@ def main():
         
     # Draw Mini Court
     output_video_frames = mini_court.draw_mini_court(output_video_frames, dominant_color)
-    output_video_frames = mini_court.draw_points_on_mini_court(output_video_frames, player_mini_court_detections)
-    output_video_frames = mini_court.draw_points_on_mini_court(output_video_frames, ball_mini_court_detections, color=(0,255,255))
+    output_video_frames = mini_court.draw_points_on_mini_court(output_video_frames, player_mini_court_detections, radius=7, thickness=3)
+    output_video_frames = mini_court.draw_points_on_mini_court(output_video_frames, ball_mini_court_detections, radius=5, color=(0,255,255))
     
     # Draw player stats
     output_video_frames = draw_player_stats(output_video_frames, player_stats_data_df)

@@ -301,13 +301,13 @@ class MiniCourt():
 
         return output_player_boxes, output_ball_boxes, ball_line_segments
     
-    def draw_points_on_mini_court(self, frames, positions, color=(0,255,0)):
+    def draw_points_on_mini_court(self, frames, positions, radius, color=(0,255,0), thickness=-1):
         for i, frame in enumerate(frames):
             for _, position in positions[i].items():
                 x,y = position
                 x= int(x)
                 y= int(y)
-                cv2.circle(frame, (x,y), 5, color, -1)
+                cv2.circle(frame, (x,y), radius, color, thickness)
         return frames
     
     def smooth_positions(self, positions, window=5):
