@@ -49,6 +49,8 @@ class BallTracker:
         
     def detect_frames(self, frames, read_from_stub=False, stub_path=None):
         ball_detections = []
+        max_jump_distance = 150
+        last_valid_center = None
         
         if read_from_stub and stub_path is not None:
             with open(stub_path, 'rb') as f:
@@ -57,7 +59,30 @@ class BallTracker:
         
         for frame in frames:
             ball_dict = self.detect_frame(frame)
-            ball_detections.append(ball_dict)
+
+            # Filter detections: keep only those not jumping unrealistically
+            filtered_dict = {}
+            for track_id, bbox in ball_dict.items():
+                x1, y1, x2, y2 = bbox
+                cx = (x1 + x2) / 2
+                cy = (y1 + y2) / 2
+                current_center = (cx, cy)
+
+                if last_valid_center is None:
+                    # First detection is always accepted
+                    filtered_dict[track_id] = bbox
+                    last_valid_center = current_center
+                else:
+                    # Calculate Euclidean distance
+                    dist = ((cx - last_valid_center[0]) ** 2 + (cy - last_valid_center[1]) ** 2) ** 0.5
+                    if dist < max_jump_distance:
+                        filtered_dict[track_id] = bbox
+                        last_valid_center = current_center
+                    else:
+                        print(f"{track_id} too far awat")
+                        continue
+
+            ball_detections.append(filtered_dict)
         
         if stub_path is not None:
             with open(stub_path, 'wb') as f:
@@ -71,6 +96,7 @@ class BallTracker:
         ball_dict = {}
         for box in results.boxes:
             result = box.xyxy.tolist()[0]
+            
             ball_dict[1] = result
         
         return ball_dict
@@ -139,6 +165,34 @@ class BallTracker:
         
         return output_video_frames
     
+    def draw_trajectory(self, video_frames, ball_detections):
+        output_video_frames = []
+        previous_points = []
+        max_trail = 10
+        max_distance = 150
+        last_valid_center = None
+        
+        for index, (frame, ball_dict) in enumerate(zip(video_frames, ball_detections)):
+            # Draw Bounding Boxes
+            for _, bbox in ball_dict.items():
+                x1, y1, x2, y2 = bbox
+                x = int((x1 + x2) / 2)
+                y = int((y1 + y2) / 2)
+                previous_points.append((x, y))
+                
+            if len(previous_points) > max_trail:
+                previous_points = previous_points[-max_trail:]
+            
+            for i in range(0, len(previous_points) - 3, 3):
+                start = previous_points[i]
+                end = previous_points[i + 3]
+                cv2.line(frame, start, end, (0, 0, 255), 2)
+            
+            output_video_frames.append(frame)
+        
+        return output_video_frames
+                
+                
     def get_ball_shot_frames(self, ball_positions, court_keypoints, player_positions):
         ball_positions = [x.get(1,[]) for x in ball_positions]
 
@@ -184,10 +238,12 @@ class BallTracker:
                     df_ball_positions.loc[i, 'ball_hit'] = 1
         
         df_ball_positions['group_id'] = (df_ball_positions['ball_hit'] != df_ball_positions['ball_hit'].shift()).cumsum()
+        
         # print(df_ball_positions.iloc[110:150])
         # print(df_ball_positions[df_ball_positions['ball_hit']==1])
         # print("")
         # Keep only the hit detection from the last frame of the hit group
+        
         last_hits = df_ball_positions[df_ball_positions['ball_hit'] == 1].groupby('group_id').tail(1)
 
         # print(last_hits)

@@ -13,10 +13,11 @@ import torch
 import constants
 from copy import deepcopy
 import pandas as pd
+import numpy as np
 
 def main():
     # Read Video
-    input_video_path = "input_videos/input_video5.mov"
+    input_video_path = "input_videos/input_video3.mp4"
     video_frames, fps, dominant_color = read_video(input_video_path)
         
     # Detect Players and Balls
@@ -26,11 +27,11 @@ def main():
                                                      read_from_stub=True,
                                                      stub_path="tracker_stubs/player_detections.pkl")
     ball_detections = ball_tracker.detect_frames(video_frames,
-                                                 read_from_stub=True,
+                                                 read_from_stub=False,
                                                  stub_path="tracker_stubs/ball_detections.pkl")
     
     ball_detections = ball_tracker.interpolate_ball_positions(ball_detections)
-    
+        
     # Court Line Detections
     court_model_path = "models/keypoints_model_state.pth"
     court_line_detector = CourtLineDetector(court_model_path)
@@ -134,6 +135,8 @@ def main():
     output_video_frames = player_tracker.draw_bboxes(video_frames, player_detections)
     output_video_frames = ball_tracker.draw_bboxes(output_video_frames, ball_detections)
     
+    output_video_frames = ball_tracker.draw_trajectory(output_video_frames, ball_detections)
+    
     # Draw court Keypoints
     output_video_frames = court_line_detector.draw_keypoints_on_video(output_video_frames, court_keypoints)
         
@@ -144,6 +147,8 @@ def main():
     
     # Draw player stats
     output_video_frames = draw_player_stats(output_video_frames, player_stats_data_df)
+    
+    heatmap = mini_court.draw_player_heatmap(player_mini_court_detections)
     
     # Draw frame number
     for i, frame in enumerate(output_video_frames):

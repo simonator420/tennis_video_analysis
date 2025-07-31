@@ -209,6 +209,7 @@ class MiniCourt():
             print(f"Ball hit index {hit}, ball box v tom bode {ball_boxes[hit]} player_boxes v tom bode {player_boxes[hit]}")
 
         for i, player_bbox in enumerate(player_boxes):
+        
             ball_box = ball_boxes[i][1]
             ball_position = get_center_of_bbox(ball_box)
             closest_player_id_to_ball = min(player_bbox.keys(), key=lambda x: measure_distance(ball_position, get_center_of_bbox(player_bbox[x])))
@@ -218,6 +219,7 @@ class MiniCourt():
                 foot_position = get_foot_position(bbox)
 
                 # Get closest keypoint in pixels
+                # print(f"Player id {player_id}")
                 closest_key_point_index = get_closest_keypoint_index(foot_position,original_court_key_points, [0,2,12,13])
                 closest_key_point = (original_court_key_points[closest_key_point_index*2], 
                                      original_court_key_points[closest_key_point_index*2+1])
@@ -267,7 +269,7 @@ class MiniCourt():
             start_frame = ball_hits[i]
             end_frame = ball_hits[i + 1]
 
-            # Zjistíme pozici míčku ve startovacím a koncovém framu
+            # Getting the ball position from the beggining of the frame to its end
             ball_start = ball_boxes[start_frame][1]
             ball_end = ball_boxes[end_frame][1]
             ball_pos_start = get_center_of_bbox(ball_start)
@@ -370,3 +372,42 @@ class MiniCourt():
             for i in range(start_f, min(end_f, len(frames))):
                 cv2.line(frames[i], (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), color, thickness)
         return frames
+
+    def draw_player_heatmap(self, player_mini_court_detections):
+        player_positions = []
+        for frame_positions in player_mini_court_detections:
+            for pos in frame_positions.values():
+                player_positions.append(pos)
+        
+        heatmap = np.zeros((self.drawing_rectangle_height, self.drawing_rectangle_width), dtype=np.float32)
+
+        for x, y in player_positions:
+            x = int(x - self.start_x)
+            y = int(y - self.start_y)
+            if 0 <= x < heatmap.shape[1] and 0 <= y < heatmap.shape[0]:
+                heatmap[y, x] += 1
+                
+        heatmap = cv2.GaussianBlur(heatmap, (15, 15), 0) 
+
+        heatmap_norm = cv2.normalize(heatmap, None, 0, 255, cv2.NORM_MINMAX)
+        heatmap_colored = cv2.applyColorMap(heatmap_norm.astype(np.uint8), cv2.COLORMAP_JET)
+        
+        mask_zero = (heatmap_norm == 0)
+        heatmap_colored[mask_zero] = [255, 255, 255]
+
+        for line in self.lines:
+            pt1 = (int(self.drawing_key_points[line[0] * 2] - self.start_x),
+                int(self.drawing_key_points[line[0] * 2 + 1] - self.start_y))
+            pt2 = (int(self.drawing_key_points[line[1] * 2] - self.start_x),
+                int(self.drawing_key_points[line[1] * 2 + 1] - self.start_y))
+            cv2.line(heatmap_colored, pt1, pt2, (0, 0, 0), 2)
+
+        net_start = (int(self.drawing_key_points[0] - self.start_x),
+                    int(((self.drawing_key_points[1] + self.drawing_key_points[5]) / 2) - self.start_y))
+        net_end = (int(self.drawing_key_points[2] - self.start_x),
+                int(((self.drawing_key_points[1] + self.drawing_key_points[5]) / 2) - self.start_y))
+        cv2.line(heatmap_colored, net_start, net_end, (255, 0, 0), 2)
+        
+        cv2.imwrite("heatmap_players_white.png", heatmap_colored)
+        return heatmap_colored
+        
