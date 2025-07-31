@@ -49,7 +49,7 @@ class BallTracker:
         
     def detect_frames(self, frames, read_from_stub=False, stub_path=None):
         ball_detections = []
-        max_jump_distance = 150
+        max_jump_distance = 1000
         last_valid_center = None
         
         if read_from_stub and stub_path is not None:
@@ -186,7 +186,7 @@ class BallTracker:
             for i in range(0, len(previous_points) - 3, 3):
                 start = previous_points[i]
                 end = previous_points[i + 3]
-                cv2.line(frame, start, end, (0, 0, 255), 2)
+                cv2.line(frame, start, end, (0, 255, 0), 2)
             
             output_video_frames.append(frame)
         
@@ -356,8 +356,9 @@ class BallTracker:
                     majority_side = sides_counts.idxmax()
                     ratio = sides_counts.max() / len(sides)
                     
-                    if ratio > 0.5 and current_side == majority_side:
+                    if ratio > 0.5 and current_side == majority_side and current_idx in final_hit_frames:
                         final_hit_frames.remove(current_idx)
+
             #             print(f"FALSE HIT REMOVED: {current_idx}, majority_side: {majority_side}, ratio: {ratio:.2f}")
 
             # print(final_hit_frames)

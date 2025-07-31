@@ -24,7 +24,7 @@ def main():
     player_tracker = PlayerTracker(model_path='yolov8x')
     ball_tracker = BallTracker(model_path='models/yolo5_last.pt')
     player_detections = player_tracker.detect_frames(video_frames,
-                                                     read_from_stub=True,
+                                                     read_from_stub=False,
                                                      stub_path="tracker_stubs/player_detections.pkl")
     ball_detections = ball_tracker.detect_frames(video_frames,
                                                  read_from_stub=False,
@@ -38,7 +38,7 @@ def main():
     court_keypoints = court_line_detector.predict(video_frames[0])
     
     # Choose players
-    player_detections = player_tracker.choose_and_filter_players(court_keypoints, player_detections)
+    player_detections = player_tracker.choose_and_filter_players(court_keypoints, player_detections, video_frames)
     
     # Detect ball shots
     ball_shot_frames = ball_tracker.get_ball_shot_frames(ball_detections, court_keypoints, player_detections)
@@ -100,8 +100,14 @@ def main():
         
         # print(f"opponent_player_id: {opponent_player_id}, player_shot_ball: {player_shot_ball}")
         
-        distance_covered_by_opponent_pixels = measure_distance(player_mini_court_detections[start_frame][opponent_player_id],
-                                                                player_mini_court_detections[end_frame][opponent_player_id])
+        if opponent_player_id in player_mini_court_detections[start_frame] and opponent_player_id in player_mini_court_detections[end_frame]:
+            distance_covered_by_opponent_pixels = measure_distance(
+                player_mini_court_detections[start_frame][opponent_player_id],
+                player_mini_court_detections[end_frame][opponent_player_id]
+            )
+        else:
+            distance_covered_by_opponent_pixels = 0  # fallback if opponent is missing
+
         distance_covered_by_opponent_meters = convert_pixel_distance_to_meters( distance_covered_by_opponent_pixels,
                                                                            constants.DOUBLE_LINE_WIDTH,
                                                                            mini_court.get_width_of_mini_court()
@@ -138,7 +144,7 @@ def main():
     output_video_frames = ball_tracker.draw_trajectory(output_video_frames, ball_detections)
     
     # Draw court Keypoints
-    output_video_frames = court_line_detector.draw_keypoints_on_video(output_video_frames, court_keypoints)
+    # output_video_frames = court_line_detector.draw_keypoints_on_video(output_video_frames, court_keypoints)
         
     # Draw Mini Court
     output_video_frames = mini_court.draw_mini_court(output_video_frames, dominant_color)

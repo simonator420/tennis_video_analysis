@@ -198,7 +198,7 @@ class MiniCourt():
     def convert_bounding_boxes_to_mini_court_coordinates(self, player_boxes, ball_boxes, ball_hits, original_court_key_points):
         player_heights = {
             1: constants.PLAYER_1_HEIGHT_METERS,
-            2: constants.PLAYER_2_HEIGHT_METERS
+            2: constants.PLAYER_2_HEIGHT_METERS,
         }
 
         output_player_boxes = []
@@ -227,7 +227,14 @@ class MiniCourt():
                 # Get player height in pixels
                 frame_index_min = max(0, i-20)
                 frame_index_max = min(len(player_boxes), i+50)
-                bboxes_heights_in_pixels = [get_height_of_bbox(player_boxes[i][player_id]) for i in range (frame_index_min,frame_index_max)]
+                
+                # print(f"Player box {player_boxes}")
+                
+                bboxes_heights_in_pixels = [
+                    get_height_of_bbox(player_boxes[i][player_id])
+                    for i in range(frame_index_min, frame_index_max)
+                    if player_id in player_boxes[i]
+                ]
                 max_player_height_in_pixels = max(bboxes_heights_in_pixels)
 
                 mini_court_player_position = self.get_mini_court_coordinates(foot_position,

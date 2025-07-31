@@ -9,26 +9,43 @@ class PlayerTracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path)
     
-    def choose_and_filter_players(self, court_keypoints, player_detections):
+    def choose_and_filter_players(self, court_keypoints, player_detections, frames):
         id_counts = {}
+        first_frame = None
+        court_center = (
+            sum(court_keypoints[0::2]) / (len(court_keypoints) // 2),
+            sum(court_keypoints[1::2]) / (len(court_keypoints) // 2)
+        )
+
         
+        if player_detections:
+            # Assume you have the original frames in a variable 'frames'
+            first_frame = frames[0].copy()
+            for track_id, bbox in player_detections[0].items():
+                x1, y1, x2, y2 = map(int, bbox)
+                cv2.rectangle(first_frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                cv2.putText(first_frame, f"ID: {track_id}", (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+            cv2.imwrite("debug_first_frame_raw_detections.jpg", first_frame)
+            
+            
         # Analyzing first frame (adjust to more frames for more accurate monitoring)
         for player_dict in player_detections[:1]:
             for track_id, bbox in player_dict.items():
                 player_center = get_center_of_bbox(bbox)
-                
-                # Measuring the distance to the court
-                min_distance = min(
-                    measure_distance(player_center, (court_keypoints[i], court_keypoints[i+1]))
-                    for i in range(0, len(court_keypoints), 2)
-                )
 
-                # Only those close to the court
-                if min_distance < 200:
-                    id_counts[track_id] = id_counts.get(track_id, 0) + 1
+                # Measure distance to the center of the court
+                distance_to_center = measure_distance(player_center, court_center)
 
-        # Selecting two most frequent ids
+                print(f"Player {track_id}, distance to court center: {distance_to_center:.2f}")
+
+                # Only count players close enough to the center
+                id_counts[track_id] = id_counts.get(track_id, 0) + 1
+
+
+        # Select two most frequent IDs
         chosen_players = sorted(id_counts.items(), key=lambda x: x[1], reverse=True)[:2]
+        print(f"Chosen players (raw IDs): {chosen_players}")
         chosen_players = [x[0] for x in chosen_players]
 
         # Filtering the rest of the frames
@@ -38,20 +55,21 @@ class PlayerTracker:
             filtered_player_detections.append(filtered_player_dict)
         
         # Assure that player ids are 1 and 2
-        for dict in filtered_player_detections:
-            if chosen_players[0] != 1:
-                dict[1] = dict.pop(chosen_players[0])
-            elif chosen_players[1] != 2:
-                dict[2] = dict.pop(chosen_players[1])
+        for d in filtered_player_detections:
+            keys = list(d.keys())
+            if len(keys) > 0:
+                d[1] = d.pop(keys[0])
+            if len(keys) > 1:
+                d[2] = d.pop(keys[1])
         
         # print(filtered_player_detections[-1])
         
         # Determine which player is on upper side of court
-        player_1_y = filtered_player_detections[0][1][1] + filtered_player_detections[0][1][3]
-        player_2_y = filtered_player_detections[0][2][1] + filtered_player_detections[0][2][3]
+        # player_1_y = filtered_player_detections[0][1][1] + filtered_player_detections[0][1][3]
+        # player_2_y = filtered_player_detections[0][2][1] + filtered_player_detections[0][2][3]
             
-        upper_player = lambda player_1_y, player_2_y: 1 if player_1_y > player_2_y else 2
-        print(f"Tohle je upper player: {upper_player(player_1_y, player_2_y)}")
+        # upper_player = lambda player_1_y, player_2_y: 1 if player_1_y > player_2_y else 2
+        # print(f"Tohle je upper player: {upper_player(player_1_y, player_2_y)}")
         
         return filtered_player_detections
         

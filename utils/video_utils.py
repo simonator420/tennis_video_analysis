@@ -59,9 +59,10 @@ def get_dominant_color(image, k=1):
     dominant_color = kmeans.cluster_centers_[0].astype(int)
     
     named_colors = {
-        'orange': np.array([181, 111, 74]),
+        # 'orange': np.array([181, 111, 74]),
+        'orange': np.array([255, 128, 0]),
         'green': np.array([0, 128, 0]),
-        'blue':  np.array([0, 0, 255])
+        'blue':  np.array([176, 196, 222])
     }
 
     # Compute distances
@@ -72,5 +73,7 @@ def get_dominant_color(image, k=1):
         if distance < min_distance:
             min_distance = distance
             closest_name = name
+            
+    print(f"tohle je closest {closest_name}")
     
     return tuple(named_colors[closest_name])  # (R, G, B)
